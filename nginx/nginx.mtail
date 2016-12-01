@@ -1,0 +1,71 @@
+#log_format  access  '$server_name $remote_addr [$time_local] $request '
+#          '$status $body_bytes_sent $http_referer $http_user_agent '
+#          '$request_time $upstream_response_time $request_body';
+
+
+counter nginx_http_requests_total by server_name, request_method, status
+counter ngnix_http_request_time_microseconds by le, server_name, request_method
+counter nginx_http_request_duration_milliseconds_sum by server_name, request_method
+counter nginx_http_response_size_bytes_sum by server_name, request_method, status
+hidden gauge time_ms
+
+
+/^/ +
+/(?P<server_name>[0-9A-Za-z\.\-:]+) / +
+/(?P<remote_addr>[0-9A-Za-z\.\-:]+) / +
+/(?P<time_local>\[\d{2}\/\w{3}\/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4}\]) / +
+/"(?P<request_method>[A-Z]+) (?P<request_uri>\S+) (?P<http_version>HTTP\/[0-9\.]+)" / +
+/(?P<status>\d{3}) / +
+/(?P<body_bytes_sent>\d+) / +
+/"(?P<http_referer>\S+)" / +
+/"(?P<http_user_agent>[[:print:]]+)" / +
+/(?P<request_seconds>\d+)\.(?P<request_milliseconds>\d+) / +
+/(?P<response_seconds>\d+)\.(?P<response_milliseconds>\d+) / +
+/(?P<request_body>.+)/ +
+/$/ {
+  # set time_ms
+  time_ms = $request_seconds * 1000 + $request_milliseconds
+  # 10ms bucket.
+  time_ms < 10 {
+    ngnix_http_request_time_microseconds["10"][$server_name][tolower($request_method)]++
+  }
+  # 25ms bucket
+  time_ms < 25 {
+    ngnix_http_request_time_microseconds["25"][$server_name][tolower($request_method)]++
+  }
+  # 50ms bucket
+  time_ms < 50 {
+    ngnix_http_request_time_microseconds["50"][$server_name][tolower($request_method)]++
+  }
+  # 100ms bucket
+  time_ms < 100 {
+    ngnix_http_request_time_microseconds["100"][$server_name][tolower($request_method)]++
+  }
+  # 250ms bucket
+  time_ms < 250 {
+    ngnix_http_request_time_microseconds["250"][$server_name][tolower($request_method)]++
+  }
+  # 500ms bucket
+  time_ms < 500 {
+    ngnix_http_request_time_microseconds["500"][$server_name][tolower($request_method)]++
+  }
+  # 1000ms bucket
+  time_ms < 1000 {
+    ngnix_http_request_time_microseconds["1000"][$server_name][tolower($request_method)]++
+  }
+  # 2500ms bucket
+  time_ms < 2500 {
+    ngnix_http_request_time_microseconds["2500"][$server_name][tolower($request_method)]++
+  }
+  # 5000ms bucket
+  time_ms < 5000 {
+    ngnix_http_request_time_microseconds["5000"][$server_name][tolower($request_method)]++
+  }
+  # 10000ms bucket
+  time_ms < 10000 {
+    ngnix_http_request_time_microseconds["10000"][$server_name][tolower($request_method)]++
+  }
+  nginx_http_requests_total[$server_name][tolower($request_method)][$status]++
+  nginx_http_request_duration_milliseconds_sum[$server_name][tolower($request_method)] += $request_seconds * 1000 + $request_milliseconds
+  nginx_http_response_size_bytes_sum[$server_name][tolower($request_method)][$status] += $body_bytes_sent
+}
