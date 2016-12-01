@@ -1,7 +1,6 @@
-#log_format  access  '$server_name $remote_addr [$time_local] $request '
-#          '$status $body_bytes_sent $http_referer $http_user_agent '
+#log_format  access  '$server_name $remote_addr [$time_local] "$request" '
+#          '$status $body_bytes_sent "$http_referer" "$http_user_agent" '
 #          '$request_time $upstream_response_time $request_body';
-
 
 counter nginx_http_requests_total by server_name, request_method, status
 counter ngnix_http_request_time_microseconds by le, server_name, request_method
